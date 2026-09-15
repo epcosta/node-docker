@@ -2,9 +2,9 @@
 
 Projeto de exemplo para execução de uma aplicação **Node.js 24 com TypeScript** utilizando Docker.
 
-O objetivo deste projeto é demonstrar como criar uma imagem Docker contendo Node.js e TypeScript e executar a aplicação dentro de um container.
+O objetivo é criar uma imagem Docker preparada para executar uma aplicação Node.js/TypeScript, permitindo que o código-fonte da aplicação seja alterado no computador e as alterações sejam refletidas dentro do container através de um **bind mount**.
 
-## 🚀 Tecnologias utilizadas
+## 🚀 Tecnologias
 
 - Node.js 24
 - TypeScript
@@ -13,227 +13,366 @@ O objetivo deste projeto é demonstrar como criar uma imagem Docker contendo Nod
 
 ## 📋 Pré-requisitos
 
-Para executar o projeto utilizando Docker, é necessário ter o **Docker** instalado.
+Para executar o projeto é necessário ter o Docker instalado.
 
-Verifique a instalação executando:
+Verifique a instalação:
 
-```bash
+```bash id="fjhnqk"
 docker --version
 ```
 
-## 📦 Criando a imagem Docker
+## 📦 Criando a imagem
 
 Na pasta onde está localizado o `Dockerfile`, execute:
 
-```bash
-docker build -t node24-typescript .
+```bash id="bzbxlw"
+docker build -t minha-app .
 ```
 
 Onde:
 
-- `docker build` cria uma nova imagem Docker.
-- `-t node24-typescript` define o nome da imagem.
-- `.` indica que o Docker deve utilizar o diretório atual como contexto para o build.
+- `docker build` cria uma imagem Docker.
+- `-t minha-app` define o nome da imagem.
+- `.` define o diretório atual como contexto para o build.
 
-Após a criação, você pode verificar a imagem com:
+Para verificar se a imagem foi criada:
 
-```bash
+```bash id="i3pcbw"
 docker images
 ```
 
-## 🐳 Criando e executando o container
+## 🐳 Executando o container
 
-Para criar e executar um container utilizando a imagem:
+No **PowerShell**, acesse primeiro a pasta que contém a aplicação Node.js que será executada dentro do container.
 
-```bash
-docker run --name node24-ts node24-typescript
+Exemplo:
+
+```powershell id="l1ofhl"
+cd C:\meus-projetos\minha-app
 ```
 
-Onde:
+Depois execute:
 
-- `docker run` cria e executa o container.
-- `--name node24-ts` define o nome do container.
-- `node24-typescript` é o nome da imagem utilizada.
-
-## 🔄 Executando em segundo plano
-
-Para executar o container em segundo plano, utilize a opção `-d`:
-
-```bash
-docker run -d --name node24-ts node24-typescript
+```powershell id="k5pg2q"
+docker run --name minha-app --rm -p 3000:3000 -e USER_NAME="Ordilia Pereira Costa" -e PORT=3000 -v ${pwd}:/imagem minha-app
 ```
 
-## 🌐 Aplicação utilizando porta
+> **Importante:** `${pwd}` representa o diretório atual do PowerShell. Portanto, o comando deve ser executado dentro da pasta que contém a aplicação Node.js.
 
-Caso a aplicação Node.js utilize, por exemplo, a porta `3000`, execute:
+## 🔎 Entendendo o comando `docker run`
 
-```bash
-docker run -d --name node24-ts -p 3000:3000 node24-typescript
+O comando completo:
+
+```powershell id="1hbtr8"
+docker run \
+  --name minha-app \
+  --rm \
+  -p 3000:3000 \
+  -e USER_NAME="Ordilia Pereira Costa" \
+  -e PORT=3000 \
+  -v ${pwd}:/imagem \
+  minha-app
 ```
 
-O parâmetro:
+### `--name minha-app`
 
-```text
+Define o nome do container:
+
+```text id="flr59x"
+minha-app
+```
+
+Isso facilita a utilização de outros comandos:
+
+```bash id="d8owqh"
+docker logs minha-app
+docker stop minha-app
+docker exec -it minha-app sh
+```
+
+### `--rm`
+
+Remove automaticamente o container quando ele for encerrado:
+
+```text id="xphm3d"
+--rm
+```
+
+Dessa forma, ao finalizar a execução, não será necessário executar posteriormente:
+
+```bash id="tj9zzt"
+docker rm minha-app
+```
+
+A imagem `minha-app` **não é removida**. Apenas o container é excluído.
+
+### `-p 3000:3000`
+
+Mapeia a porta `3000` do computador para a porta `3000` do container:
+
+```text id="8cq0bz"
 -p 3000:3000
+
+   computador
+       3000
+        │
+        ▼
+┌─────────────────┐
+│    Container    │
+│                 │
+│      3000       │
+└─────────────────┘
 ```
 
-representa:
+A aplicação poderá ser acessada através de:
 
-```text
-porta do computador : porta do container
-       3000         :       3000
-```
-
-A aplicação poderá então ser acessada em:
-
-```text
+```text id="b50zcn"
 http://localhost:3000
 ```
 
-## 📜 Visualizando os logs
+## 🌎 Variáveis de ambiente
 
-Para visualizar os logs do container:
+O comando também envia variáveis de ambiente para a aplicação:
 
-```bash
-docker logs node24-ts
+```powershell id="vkwftw"
+-e USER_NAME="Ordilia Pereira Costa"
+-e PORT=3000
 ```
 
-Para acompanhar os logs em tempo real:
+Neste projeto elas são utilizadas **apenas para testes**, portanto podem receber outros valores.
 
-```bash
-docker logs -f node24-ts
+Por exemplo:
+
+```powershell id="90jfev"
+-e USER_NAME="Teste Docker"
+-e PORT=3000
 ```
 
-Para sair da visualização dos logs pressione:
+No Node.js elas podem ser acessadas através de:
 
-```text
+```typescript id="xkqlv6"
+const userName = process.env.USER_NAME;
+const port = process.env.PORT;
+
+console.log(userName);
+console.log(port);
+```
+
+## 📂 Bind mount da aplicação
+
+Uma das partes mais importantes do comando é:
+
+```powershell id="ls9jd0"
+-v ${pwd}:/imagem
+```
+
+`${pwd}` representa o diretório atual no **PowerShell**.
+
+Por exemplo, estando em:
+
+```text id="p8w28f"
+C:\curso-node\minha-aplicacao
+```
+
+e executando:
+
+```powershell id="bsjrt3"
+-v ${pwd}:/imagem
+```
+
+o Docker monta aproximadamente:
+
+```text id="25i89s"
+Windows                         Container
+
+C:\curso-node\minha-aplicacao  →  /imagem
+```
+
+Portanto, `/imagem` dentro do container passa a representar a pasta da aplicação existente no computador.
+
+## 🔄 Atualização da aplicação
+
+Como a pasta está montada através de um **bind mount**, alterações realizadas nos arquivos da aplicação no computador ficam disponíveis dentro do container.
+
+Por exemplo:
+
+```text id="gmq81j"
+Computador
+   │
+   │ altera
+   ▼
+src/app.ts
+   │
+   │ bind mount
+   ▼
+Container
+/imagem/src/app.ts
+```
+
+Isso permite desenvolver a aplicação sem precisar criar uma nova imagem Docker toda vez que um arquivo TypeScript for alterado.
+
+> Para que a aplicação seja automaticamente reiniciada após uma alteração, ela também precisa utilizar uma ferramenta de monitoramento, como **nodemon**, configurada para observar os arquivos da aplicação.
+
+## 📁 Exemplo
+
+Suponha que a aplicação esteja em:
+
+```text id="kg6v3f"
+C:\curso-node\teste-node
+```
+
+Entre na pasta:
+
+```powershell id="6idkxb"
+cd C:\curso-node\teste-node
+```
+
+Execute:
+
+```powershell id="71rs5i"
+docker run --name minha-app --rm -p 3000:3000 -e USER_NAME="Teste Docker" -e PORT=3000 -v ${pwd}:/imagem minha-app
+```
+
+A pasta:
+
+```text id="z7amri"
+C:\curso-node\teste-node
+```
+
+será disponibilizada dentro do container como:
+
+```text id="djwq60"
+/imagem
+```
+
+## 🛠️ Desenvolvimento com Nodemon
+
+Caso a imagem esteja configurada para utilizar o `nodemon`, alterações nos arquivos TypeScript podem provocar automaticamente a reinicialização da aplicação.
+
+Por exemplo:
+
+```text id="o30t65"
+VS Code
+   │
+   │ salva app.ts
+   ▼
+Pasta no Windows
+   │
+   │ bind mount
+   ▼
+/imagem no container
+   │
+   │ nodemon detecta alteração
+   ▼
+Aplicação reiniciada
+```
+
+Assim o fluxo de desenvolvimento fica:
+
+```text id="qsmqv7"
+Alterar código → Salvar → Docker recebe alteração → Nodemon reinicia
+```
+
+sem precisar executar novamente:
+
+```bash id="vm2al3"
+docker build
+```
+
+a cada alteração.
+
+## 🛑 Encerrando o container
+
+Como o container está sendo executado no terminal, utilize:
+
+```text id="5u0egk"
 Ctrl + C
 ```
 
-Isso não encerra o container.
+Como foi utilizado:
 
-## ⏹️ Parando o container
-
-```bash
-docker stop node24-ts
+```text id="3w9s1g"
+--rm
 ```
 
-## ▶️ Iniciando novamente
+o container será automaticamente removido após ser encerrado.
 
-```bash
-docker start node24-ts
+Também é possível encerrá-lo utilizando outro terminal:
+
+```bash id="jtr49x"
+docker stop minha-app
 ```
 
-Para iniciar e acompanhar a saída do container:
-
-```bash
-docker start -a node24-ts
-```
-
-## 🗑️ Removendo o container
-
-Primeiro pare o container:
-
-```bash
-docker stop node24-ts
-```
-
-Depois remova:
-
-```bash
-docker rm node24-ts
-```
-
-Também é possível forçar a remoção:
-
-```bash
-docker rm -f node24-ts
-```
-
-## 🗑️ Removendo a imagem
-
-Após remover o container, a imagem pode ser removida com:
-
-```bash
-docker rmi node24-typescript
-```
-
-## 📁 Estrutura básica do projeto
-
-```text
-node24-typescript/
-│
-├── src/
-│   └── app.ts
-│
-├── Dockerfile
-├── package.json
-├── package-lock.json
-├── tsconfig.json
-├── .dockerignore
-├── .gitignore
-└── README.md
-```
-
-## 🧪 Exemplo de aplicação
-
-Um exemplo simples para `src/app.ts`:
-
-```typescript
-console.log("Node.js 24 + TypeScript executando dentro do Docker!");
-```
-
-## 🐳 Exemplo de Dockerfile
-
-```dockerfile
-FROM node:24
-
-WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm install
-
-COPY . .
-
-RUN npm run build
-
-CMD ["npm", "start"]
-```
-
-> O `Dockerfile` deve ser ajustado de acordo com os scripts existentes no `package.json` do projeto.
-
-## 🔍 Comandos Docker úteis
+## 🔍 Comandos úteis
 
 Ver containers em execução:
 
-```bash
+```bash id="r0w8co"
 docker ps
 ```
 
 Ver todos os containers:
 
-```bash
+```bash id="78nbhh"
 docker ps -a
 ```
 
 Ver imagens:
 
-```bash
+```bash id="m98p0s"
 docker images
 ```
 
-Entrar no terminal de um container em execução:
+Entrar no container:
 
-```bash
-docker exec -it node24-ts sh
+```bash id="kszphb"
+docker exec -it minha-app sh
+```
+
+Dentro do container, verificar a aplicação montada:
+
+```bash id="ypcclo"
+cd /imagem
+ls
 ```
 
 Para sair:
 
-```bash
+```bash id="4ctcxh"
 exit
 ```
+
+## ⚡ Resumo rápido
+
+### 1. Criar a imagem
+
+```bash id="2ax7de"
+docker build -t minha-app .
+```
+
+### 2. Entrar na pasta da aplicação
+
+```powershell id="z1oyl3"
+cd C:\caminho\da\aplicacao
+```
+
+### 3. Executar o container
+
+```powershell id="8a6xf6"
+docker run --name minha-app --rm -p 3000:3000 -e USER_NAME="Teste Docker" -e PORT=3000 -v ${pwd}:/imagem minha-app
+```
+
+### 4. Alterar o código
+
+Edite normalmente os arquivos da aplicação no VS Code.
+
+O bind mount:
+
+```powershell id="wh17fb"
+-v ${pwd}:/imagem
+```
+
+mantém a pasta local e `/imagem` do container sincronizadas.
 
 ## 👨‍💻 Autor
 
@@ -241,6 +380,14 @@ exit
 
 GitHub: `epcosta`
 
-## 📄 Licença
+## 📄 Objetivo
 
-Este projeto foi criado para fins de estudo e aprendizado de **Docker, Node.js e TypeScript**.
+Projeto criado para fins de estudo e aprendizado de:
+
+- Docker
+- Node.js 24
+- TypeScript
+- Variáveis de ambiente
+- Mapeamento de portas
+- Bind mounts
+- Desenvolvimento com atualização automática
